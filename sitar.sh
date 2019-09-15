@@ -34,14 +34,17 @@ if ! $AWS --version > /dev/null 2>&1; then
     exit 1
 fi
 
+if ! command -v gzip > /dev/null; then
+    echo "$0: gzip is a requirement" 1>&2
+    exit 1
+fi
+
 # Figure out compression method and parameters
 if [ "$COMPRESS" = "" ]; then
     if command -v bzip2 > /dev/null; then
 	    COMPRESS=bzip2
-    elif command -v gzip > /dev/null; then
-	    COMPRESS=gzip
     else
-	    COMPRESS=none
+	    COMPRESS=gzip
     fi
 fi
 
@@ -100,7 +103,8 @@ if ! s3exists ".sitar"; then
     LAST=0
     DEST="full.$TAREXT"
 else
-    $AWS s3 cp -- "$S3BASE/.sitar" - | tar xf - -C "$TMPDIR/sitar" || exit 1
+    $AWS s3 cp -- "$S3BASE/.sitar" - | \
+        tar --extract --file=- --directory="$TMPDIR/sitar" || exit 1
 
     FULL_FILE=$(awk '$1 == 0 { print $2 }' "$TMPDIR/sitar/files.dat") || exit 1
     if ! s3exists "$FULL_FILE"; then
@@ -182,7 +186,7 @@ echo "$LAST" > "$TMPDIR/sitar/last.dat"
 echo "$LEVEL" > "$TMPDIR/sitar/level.dat"
 echo "$LEVEL $DEST" >> "$TMPDIR/sitar/files.dat"
 
-tar --create --file=- --directory="$TMPDIR/sitar" . | s3catinto ".sitar"
+tar --gzip --create --file=- --directory="$TMPDIR/sitar" . | s3catinto ".sitar"
 
 rm -rf "$TMPDIR"
 
