@@ -99,8 +99,8 @@ mkdir -p "$TMPDIR"
 
 if ! s3exists "$FULL"; then
     if [ $($AWS s3 ls -- "$S3BASE/" | wc -l) -gt 1 ]; then
-	echo "$0: $S3BASE is not empty" 1>&2
-	exit 1
+        echo "$0: $S3BASE is not empty" 1>&2
+        exit 1
     fi
     LEVEL=0
     LAST=0
@@ -109,22 +109,22 @@ else
     $AWS s3 cp -- "$S3BASE/.sitar" - | tar xf - -C "$TMPDIR" || exit 1
 
     if s3exists 'SITAR-RESET.txt'; then
-	NEW_LEVEL=$($AWS s3 cp -- "$S3BASE/SITAR-RESET.txt" -)
-	if [ "$NEW_LEVEL" != $(echo "$NEW_LEVEL" | tr -dc '0-9') ] || [ "$NEW_LEVEL" -lt 0 ]; then
-	    echo "$0: Invalid RESET value ignored: $NEW_LEVEL" 1>&2
-	else
-	    LAST_LEVEL="$NEW_LEVEL"
-	fi
-	$AWS s3 rm --only-show-errors -- "$S3BASE/SITAR-RESET.txt" || exit 1
+        NEW_LEVEL=$($AWS s3 cp -- "$S3BASE/SITAR-RESET.txt" -)
+        if [ "$NEW_LEVEL" != $(echo "$NEW_LEVEL" | tr -dc '0-9') ] || [ "$NEW_LEVEL" -lt 0 ]; then
+            echo "$0: Invalid RESET value ignored: $NEW_LEVEL" 1>&2
+        else
+            LAST_LEVEL="$NEW_LEVEL"
+        fi
+        $AWS s3 rm --only-show-errors -- "$S3BASE/SITAR-RESET.txt" || exit 1
     else
-	LAST_LEVEL=$(cat "$TMPDIR/level.dat")
+        LAST_LEVEL=$(cat "$TMPDIR/level.dat")
     fi
 
     if [ "$LAST_LEVEL" -ge "$MAX_LEVELS" ]; then
-	LEVEL="$MAX_LEVELS"
+        LEVEL="$MAX_LEVELS"
     else
-	LEVEL=$(($LAST_LEVEL + 1))
-	cp "$TMPDIR/L$LAST_LEVEL.snar" "$TMPDIR/L$LEVEL.snar" || exit 1
+        LEVEL=$(($LAST_LEVEL + 1))
+        cp "$TMPDIR/L$LAST_LEVEL.snar" "$TMPDIR/L$LEVEL.snar" || exit 1
     fi
 
     LAST=$(($(cat "$TMPDIR/last.dat") + 1))
