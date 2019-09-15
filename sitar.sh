@@ -32,7 +32,7 @@ fi
 
 shift 2
 
-if ! $AWS --version > /dev/null; then
+if ! $AWS --version > /dev/null 2>&1; then
     echo "$0: Could not get AWS CLI version" 1>&2
     exit 1
 fi
@@ -78,7 +78,7 @@ else
 	else
 	    LAST_LEVEL="$NEW_LEVEL"
 	fi
-	$AWS s3 rm -- "$S3BASE/SITAR-RESET.txt"
+	$AWS s3 rm --only-show-errors -- "$S3BASE/SITAR-RESET.txt" || exit 1
     else
 	LAST_LEVEL=$(cat "$TMPDIR/level.dat")
     fi
@@ -114,7 +114,7 @@ if ! tar --create --listed-incremental="$SNAR" --file="-" \
      --exclude-tag=.sitarexclude \
      $TAREXTRA \
      --directory="$DIR" . "$@" | s3catinto "$DEST"; then
-    $AWS s3 rm -- "$DEST"
+    $AWS s3 --only-show-errors rm -- "$DEST"
     exit 1
 fi
 
