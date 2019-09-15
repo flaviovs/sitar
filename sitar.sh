@@ -102,6 +102,12 @@ if ! s3exists ".sitar"; then
 else
     $AWS s3 cp -- "$S3BASE/.sitar" - | tar xf - -C "$TMPDIR" || exit 1
 
+    FULL_FILE=$(awk '$1 == 0 { print $2 }' "$TMPDIR/files.dat") || exit 1
+    if ! s3exists "$FULL_FILE"; then
+        echo "$0: Full backup missing: $S3BASE/$FULL_FILE" 1>&2
+        exit 1
+    fi
+
     if s3exists 'SITAR-RESET.txt'; then
         NEW_LEVEL=$($AWS s3 cp -- "$S3BASE/SITAR-RESET.txt" -)
         if [ "$NEW_LEVEL" != $(echo "$NEW_LEVEL" | tr -dc '0-9') ] || [ "$NEW_LEVEL" -lt 0 ]; then
@@ -166,11 +172,7 @@ fi
 
 echo "$LAST" > "$TMPDIR/last.dat"
 echo "$LEVEL" > "$TMPDIR/level.dat"
-if [ "$LEVEL" -eq 0 ]; then
-    rm -rf "$TMPDIR/files.dat"
-else
-    echo "$LEVEL $DEST" >> "$TMPDIR/files.dat"
-fi
+echo "$LEVEL $DEST" >> "$TMPDIR/files.dat"
 
 tar --create --file=- --directory="$TMPDIR" . | s3catinto ".sitar"
 
