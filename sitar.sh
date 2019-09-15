@@ -149,13 +149,14 @@ SNAR="$TMPDIR/sitar/L$LEVEL.snar"
         $TARCOMPRESS $TAREXTRA \
         --directory="$DIR" . "$@";
     echo "$?" > "$TMPDIR/tarrc.txt"
-) | s3catinto "$DEST"
+) | s3catinto ".tmp.$DEST"
 S3RC=$?
 TARRC=$(cat $TMPDIR/tarrc.txt)
 if [ $S3RC -ne 0 -o $TARRC -ne 0 ]; then
-    $AWS s3 --only-show-errors rm -- "$S3BASE/$DEST"
+    $AWS s3 --only-show-errors rm -- "$S3BASE/.tmp.$DEST"
     exit 1
 fi
+$AWS s3 --only-show-errors mv -- "$S3BASE/.tmp.$DEST" "$S3BASE/$DEST"
 
 # Prune snar files for unused levels
 L=$(($LEVEL + 1))
