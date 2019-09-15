@@ -86,22 +86,19 @@ s3catinto() {
     return $?
 }
 
-FULL="full.$TAREXT"
-METADATA=".sitar"
-
 TMPDIR=$(mktemp -dt sitar.XXXXXX) || exit 1
 trap "rm -rf $TMPDIR; exit 1" 1 2 3 4 5 6 7 8 10 11 12 13 14 15
 
 mkdir -p "$TMPDIR"
 
-if ! s3exists "$FULL"; then
+if ! s3exists ".sitar"; then
     if [ $($AWS s3 ls -- "$S3BASE/" | wc -l) -gt 1 ]; then
         echo "$0: $S3BASE is not empty" 1>&2
         exit 1
     fi
     LEVEL=0
     LAST=0
-    DEST="$FULL"
+    DEST="full.$TAREXT"
 else
     $AWS s3 cp -- "$S3BASE/.sitar" - | tar xf - -C "$TMPDIR" || exit 1
 
@@ -175,7 +172,7 @@ else
     echo "$LEVEL $DEST" >> "$TMPDIR/files.dat"
 fi
 
-tar --create --file=- --directory="$TMPDIR" . | s3catinto "$METADATA"
+tar --create --file=- --directory="$TMPDIR" . | s3catinto ".sitar"
 
 rm -rf "$TMPDIR"
 
