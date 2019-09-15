@@ -8,15 +8,12 @@
 # file LICENSE for full licensing terms.
 #
 
-MAX_LEVELS=10
-
 : ${AWS=aws}
 
 COMPRESS=
 while getopts C: opt; do
     case "$opt" in
 	C) COMPRESS="$OPTARG";;
-	n) MAX_LEVELS="$OPTARG";;
 	*) exit 1
     esac
 done
@@ -120,12 +117,8 @@ else
         LAST_LEVEL=$(cat "$TMPDIR/level.dat")
     fi
 
-    if [ "$LAST_LEVEL" -ge "$MAX_LEVELS" ]; then
-        LEVEL="$MAX_LEVELS"
-    else
-        LEVEL=$(($LAST_LEVEL + 1))
-        cp "$TMPDIR/L$LAST_LEVEL.snar" "$TMPDIR/L$LEVEL.snar" || exit 1
-    fi
+    LEVEL=$(($LAST_LEVEL + 1))
+    cp "$TMPDIR/L$LAST_LEVEL.snar" "$TMPDIR/L$LEVEL.snar" || exit 1
 
     LAST=$(($(cat "$TMPDIR/last.dat") + 1))
     DEST="inc-$(printf '%05d-%03d' $LAST $LEVEL).$TAREXT"
