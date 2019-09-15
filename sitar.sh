@@ -71,7 +71,18 @@ if ! s3exists "$FULL"; then
 else
     $AWS s3 cp -- "$S3BASE/.sitar" - | tar xf - -C "$TMPDIR" || exit 1
 
-    LAST_LEVEL=$(cat "$TMPDIR/level.dat")
+    if s3exists 'SITAR-RESET.txt'; then
+	NEW_LEVEL=$($AWS s3 cp -- "$S3BASE/SITAR-RESET.txt" -)
+	if [ "$NEW_LEVEL" != $(echo "$NEW_LEVEL" | tr -dc '0-9') ] || [ "$NEW_LEVEL" -lt 0 ]; then
+	    echo "$0: Invalid RESET value ignored: $NEW_LEVEL" 1>&2
+	else
+	    LAST_LEVEL="$NEW_LEVEL"
+	fi
+	$AWS s3 rm -- "$S3BASE/SITAR-RESET.txt"
+    else
+	LAST_LEVEL=$(cat "$TMPDIR/level.dat")
+    fi
+
     if [ "$LAST_LEVEL" -ge "$MAX_LEVELS" ]; then
 	LEVEL="$MAX_LEVELS"
     else
@@ -80,7 +91,7 @@ else
     fi
 
     LAST=$(($(cat "$TMPDIR/last.dat") + 1))
-    DEST="inc-$(printf '%05d' $LAST).$TAREXT"
+    DEST="inc-$(printf '%05d-%03d' $LAST $LEVEL).$TAREXT"
 fi
 
 # Create README.txt, if it does not exist.
@@ -107,6 +118,25 @@ if ! tar --create --listed-incremental="$SNAR" --file="-" \
     exit 1
 fi
 
+# Prune snar files for unused levels
+L=$(($LEVEL + 1))
+while [ -f "$TMPDIR/L$L.snar" ]; do
+    rm -- "$TMPDIR/L$L.snar"
+    L=$(($L + 1))
+done
+
+if [ -f "$TMPDIR/files.dat" ]; then
+    # Prune files for unused levels.
+    while read L name; do
+	if [ "$L" -ge "$LEVEL" ]; then
+	    $AWS s3 rm --only-show-errors -- "$S3BASE/$name" || exit 1
+	else
+	    echo "$L $name"
+	fi
+    done < "$TMPDIR/files.dat" > "$TMPDIR/files.dat.new"
+    mv -- "$TMPDIR/files.dat.new" "$TMPDIR/files.dat"
+fi
+
 echo "$LAST" > "$TMPDIR/last.dat"
 echo "$LEVEL" > "$TMPDIR/level.dat"
 if [ "$LEVEL" -eq 0 ]; then
@@ -114,6 +144,7 @@ if [ "$LEVEL" -eq 0 ]; then
 else
     echo "$LEVEL $DEST" >> "$TMPDIR/files.dat"
 fi
+
 tar --create --file=- --directory="$TMPDIR" . | s3catinto "$METADATA"
 
 rm -rf "$TMPDIR"
