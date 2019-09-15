@@ -13,8 +13,8 @@
 COMPRESS=
 while getopts C: opt; do
     case "$opt" in
-	C) COMPRESS="$OPTARG";;
-	*) exit 1
+	    C) COMPRESS="$OPTARG";;
+	    *) exit 1
     esac
 done
 shift $(($OPTIND - 1))
@@ -37,24 +37,24 @@ fi
 # Figure out compression method and parameters
 if [ "$COMPRESS" = "" ]; then
     if command -v bzip2 > /dev/null; then
-	COMPRESS=bzip2
+	    COMPRESS=bzip2
     elif command -v gzip > /dev/null; then
-	COMPRESS=gzip
+	    COMPRESS=gzip
     else
-	COMPRESS=none
+	    COMPRESS=none
     fi
 fi
 
 case "$COMPRESS" in
     bzip2)
-	TAREXT="tar.bz2"
-	TARCOMPRESS="--bzip2"
-	;;
+	    TAREXT="tar.bz2"
+	    TARCOMPRESS="--bzip2"
+	    ;;
 
     gzip)
-	TAREXT="tar.gz"
-	TARCOMPRESS="--gzip"
-	;;
+	    TAREXT="tar.gz"
+	    TARCOMPRESS="--gzip"
+	    ;;
 
     xz)
         TAREXT="tar.xz"
