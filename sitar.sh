@@ -104,7 +104,7 @@ if ! s3exists ".sitar"; then
     DEST="full.$TAREXT"
 else
     $AWS s3 cp -- "$S3BASE/.sitar" - | \
-        tar --extract --file=- --directory="$TMPDIR/sitar" || exit 1
+        tar --gzip --extract --file=- --directory="$TMPDIR/sitar" || exit 1
 
     FULL_FILE=$(awk '$1 == 0 { print $2 }' "$TMPDIR/sitar/files.dat") || exit 1
     if ! s3exists "$FULL_FILE"; then
@@ -153,15 +153,13 @@ SNAR="$TMPDIR/sitar/L$LEVEL.snar"
         $TARCOMPRESS "$@" \
         --directory="$DIR" .;
     echo "$?" > "$TMPDIR/tarrc.txt"
-) | s3catinto ".tmp.$DEST"
+) | $AWS s3 cp $AWSCLI_EXTRA - "$S3BASE/$DEST"
 S3RC=$?
 TARRC=$(cat $TMPDIR/tarrc.txt)
 if [ $S3RC -ne 0 -o $TARRC -ne 0 ]; then
-    $AWS s3 --only-show-errors rm -- "$S3BASE/.tmp.$DEST"
+    $AWS s3 --only-show-errors rm -- "$S3BASE/$DEST"
     exit 1
 fi
-$AWS s3 --only-show-errors mv $AWSCLI_EXTRA \
-     -- "$S3BASE/.tmp.$DEST" "$S3BASE/$DEST"
 
 # Prune snar files for unused levels
 L=$(($LEVEL + 1))
