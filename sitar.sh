@@ -142,12 +142,18 @@ fi
 
 SNAR="$TMPDIR/sitar/L$LEVEL.snar"
 
-if ! tar --create --listed-incremental="$SNAR" --file="-" \
-     --exclude-ignore=.sitarignore \
-     --exclude-tag=.sitarskip \
-     $TARCOMPRESS $TAREXTRA \
-     --directory="$DIR" . "$@" | s3catinto "$DEST"; then
-    $AWS s3 --only-show-errors rm -- "$DEST"
+(
+    tar --create --listed-incremental="$SNAR" --file="-" \
+        --exclude-ignore=.sitarignore \
+        --exclude-tag=.sitarskip \
+        $TARCOMPRESS $TAREXTRA \
+        --directory="$DIR" . "$@";
+    echo "$?" > "$TMPDIR/tarrc.txt"
+) | s3catinto "$DEST"
+S3RC=$?
+TARRC=$(cat $TMPDIR/tarrc.txt)
+if [ $S3RC -ne 0 -o $TARRC -ne 0 ]; then
+    $AWS s3 --only-show-errors rm -- "$S3BASE/$DEST"
     exit 1
 fi
 
