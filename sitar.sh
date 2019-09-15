@@ -144,7 +144,7 @@ SNAR="$TMPDIR/L$LEVEL.snar"
 
 if ! tar --create --listed-incremental="$SNAR" --file="-" \
      --exclude-ignore=.sitarignore \
-     --exclude-tag=.sitarexclude \
+     --exclude-tag=.sitarskip \
      $TARCOMPRESS $TAREXTRA \
      --directory="$DIR" . "$@" | s3catinto "$DEST"; then
     $AWS s3 --only-show-errors rm -- "$DEST"
