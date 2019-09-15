@@ -143,7 +143,7 @@ fi
 SNAR="$TMPDIR/L$LEVEL.snar"
 
 if ! tar --create --listed-incremental="$SNAR" --file="-" \
-     --exclude-ignore-recursive=.sitarignore \
+     --exclude-ignore=.sitarignore \
      --exclude-tag=.sitarexclude \
      $TARCOMPRESS $TAREXTRA \
      --directory="$DIR" . "$@" | s3catinto "$DEST"; then
