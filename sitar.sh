@@ -146,8 +146,8 @@ SNAR="$TMPDIR/sitar/L$LEVEL.snar"
     tar --create --listed-incremental="$SNAR" --file="-" \
         --exclude-ignore=.sitarignore \
         --exclude-tag=.sitarskip \
-        $TARCOMPRESS $TAREXTRA \
-        --directory="$DIR" . "$@";
+        $TARCOMPRESS "$@" \
+        --directory="$DIR" .;
     echo "$?" > "$TMPDIR/tarrc.txt"
 ) | s3catinto ".tmp.$DEST"
 S3RC=$?
