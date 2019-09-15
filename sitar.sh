@@ -89,7 +89,7 @@ s3catinto() {
 TMPDIR=$(mktemp -dt sitar.XXXXXX) || exit 1
 trap "rm -rf $TMPDIR; exit 1" 1 2 3 4 5 6 7 8 10 11 12 13 14 15
 
-mkdir -p "$TMPDIR"
+mkdir -p "$TMPDIR/sitar"
 
 if ! s3exists ".sitar"; then
     if [ $($AWS s3 ls -- "$S3BASE/" | wc -l) -gt 1 ]; then
@@ -100,9 +100,9 @@ if ! s3exists ".sitar"; then
     LAST=0
     DEST="full.$TAREXT"
 else
-    $AWS s3 cp -- "$S3BASE/.sitar" - | tar xf - -C "$TMPDIR" || exit 1
+    $AWS s3 cp -- "$S3BASE/.sitar" - | tar xf - -C "$TMPDIR/sitar" || exit 1
 
-    FULL_FILE=$(awk '$1 == 0 { print $2 }' "$TMPDIR/files.dat") || exit 1
+    FULL_FILE=$(awk '$1 == 0 { print $2 }' "$TMPDIR/sitar/files.dat") || exit 1
     if ! s3exists "$FULL_FILE"; then
         echo "$0: Full backup missing: $S3BASE/$FULL_FILE" 1>&2
         exit 1
@@ -117,13 +117,13 @@ else
         fi
         $AWS s3 rm --only-show-errors -- "$S3BASE/SITAR-RESET.txt" || exit 1
     else
-        LAST_LEVEL=$(cat "$TMPDIR/level.dat")
+        LAST_LEVEL=$(cat "$TMPDIR/sitar/level.dat")
     fi
 
     LEVEL=$(($LAST_LEVEL + 1))
-    cp "$TMPDIR/L$LAST_LEVEL.snar" "$TMPDIR/L$LEVEL.snar" || exit 1
+    cp "$TMPDIR/sitar/L$LAST_LEVEL.snar" "$TMPDIR/sitar/L$LEVEL.snar" || exit 1
 
-    LAST=$(($(cat "$TMPDIR/last.dat") + 1))
+    LAST=$(($(cat "$TMPDIR/sitar/last.dat") + 1))
     DEST="inc-$(printf '%05d-%03d' $LAST $LEVEL).$TAREXT"
 fi
 
@@ -140,7 +140,7 @@ To restore:
 EOF
 fi
 
-SNAR="$TMPDIR/L$LEVEL.snar"
+SNAR="$TMPDIR/sitar/L$LEVEL.snar"
 
 if ! tar --create --listed-incremental="$SNAR" --file="-" \
      --exclude-ignore=.sitarignore \
@@ -153,12 +153,12 @@ fi
 
 # Prune snar files for unused levels
 L=$(($LEVEL + 1))
-while [ -f "$TMPDIR/L$L.snar" ]; do
-    rm -- "$TMPDIR/L$L.snar"
+while [ -f "$TMPDIR/sitar/L$L.snar" ]; do
+    rm -- "$TMPDIR/sitar/L$L.snar"
     L=$(($L + 1))
 done
 
-if [ -f "$TMPDIR/files.dat" ]; then
+if [ -f "$TMPDIR/sitar/files.dat" ]; then
     # Prune files for unused levels.
     while read L name; do
 	if [ "$L" -ge "$LEVEL" ]; then
@@ -166,15 +166,15 @@ if [ -f "$TMPDIR/files.dat" ]; then
 	else
 	    echo "$L $name"
 	fi
-    done < "$TMPDIR/files.dat" > "$TMPDIR/files.dat.new"
-    mv -- "$TMPDIR/files.dat.new" "$TMPDIR/files.dat"
+    done < "$TMPDIR/sitar/files.dat" > "$TMPDIR/files.dat.new"
+    mv -- "$TMPDIR/files.dat.new" "$TMPDIR/sitar/files.dat"
 fi
 
-echo "$LAST" > "$TMPDIR/last.dat"
-echo "$LEVEL" > "$TMPDIR/level.dat"
-echo "$LEVEL $DEST" >> "$TMPDIR/files.dat"
+echo "$LAST" > "$TMPDIR/sitar/last.dat"
+echo "$LEVEL" > "$TMPDIR/sitar/level.dat"
+echo "$LEVEL $DEST" >> "$TMPDIR/sitar/files.dat"
 
-tar --create --file=- --directory="$TMPDIR" . | s3catinto ".sitar"
+tar --create --file=- --directory="$TMPDIR/sitar" . | s3catinto ".sitar"
 
 rm -rf "$TMPDIR"
 
