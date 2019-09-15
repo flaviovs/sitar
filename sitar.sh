@@ -11,11 +11,11 @@
 MAX_LEVELS=10
 
 : ${AWS=aws}
-: ${TAREXT="tar.bz2"}
-: ${TAREXTRA="--bzip2"}
 
-while getopts b:l: opt; do
+COMPRESS=
+while getopts C: opt; do
     case "$opt" in
+	C) COMPRESS="$OPTARG";;
 	n) MAX_LEVELS="$OPTARG";;
 	*) exit 1
     esac
@@ -36,6 +36,43 @@ if ! $AWS --version > /dev/null 2>&1; then
     echo "$0: Could not get AWS CLI version" 1>&2
     exit 1
 fi
+
+# Figure out compression method and parameters
+if [ "$COMPRESS" = "" ]; then
+    if command -v bzip2 > /dev/null; then
+	COMPRESS=bzip2
+    elif command -v gzip > /dev/null; then
+	COMPRESS=gzip
+    else
+	COMPRESS=none
+    fi
+fi
+
+case "$COMPRESS" in
+    bzip2)
+	TAREXT="tar.bz2"
+	TARCOMPRESS="--bzip2"
+	;;
+
+    gzip)
+	TAREXT="tar.gz"
+	TARCOMPRESS="--gzip"
+	;;
+
+    xz)
+        TAREXT="tar.xz"
+        TARCOMPRESS="--xz"
+        ;;
+
+    none)
+        TAREXT="tar"
+        TARCOMPRESS=""
+        ;;
+
+    *)
+        echo "$0: Invalid compression method: $COMPRESS" 1>&2
+        exit 1
+esac
 
 # Ensure $S3BASE does end with a slash.
 S3BASE=$(echo "$S3BASE" | sed 's,//*$,,')
@@ -112,7 +149,7 @@ SNAR="$TMPDIR/L$LEVEL.snar"
 if ! tar --create --listed-incremental="$SNAR" --file="-" \
      --exclude-ignore-recursive=.sitarignore \
      --exclude-tag=.sitarexclude \
-     $TAREXTRA \
+     $TARCOMPRESS $TAREXTRA \
      --directory="$DIR" . "$@" | s3catinto "$DEST"; then
     $AWS s3 --only-show-errors rm -- "$DEST"
     exit 1
