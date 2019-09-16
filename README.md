@@ -9,8 +9,8 @@ Features
 --------
 
 * Incremental backups - after a full backup, sitar backs up only
-  changed files. That means faster backups, and less space used by
-  your S3 buckets.
+  changed files. That means faster backups, less bandwidth used for
+  saving backups, and less space used by your S3 buckets.
 
 * Standards compatibility - sitar uses GNU tar(1) for all
   backups. This allows you to use the tools you are already familiar
@@ -46,7 +46,7 @@ carefully before deploying to production. Use at your own risk.
 Installation
 ============
 
-Run the following commands to install sitar in your sistem:
+Run the following commands to install sitar in your system:
 
 ```console
 sudo wget -q -O /usr/local/bin/sitar https://raw.githubusercontent.com/flaviovs/sitar/master/sitar.sh
@@ -127,6 +127,60 @@ sitar provides two mechanisms to ignore files:
 
   **Note:** GNU tar (as of 1.30) will emit a warning for each
   `.sitarskip` file it encounters while doing backups.
+
+
+Resetting levels
+================
+
+sitar will keep incrementing backup levels indefinitely so that new
+backups only contain data about files created/updated/deleted since
+the last operation. This is optimal from a S3 space and bandwidth
+perspective, but having lots of incremental backups can be problematic:
+
+* Backup levels keep track of file deletion using tar(1) snapshots _in
+  the next level_. That means that your deleted files will stay on S3
+  as long as the current backup level is higher that the one used to
+  back up the file.  Also, deleted files need to be "restored" and
+  then removed during a full restore, which might make the operation
+  significantly slower.
+
+  For example, suppose that a file `large.zip` is backed up on
+  level 5. On the next day the file is deleted, so it is not included
+  in the next (level 6) daily backup. In this scenario, `large.zip`
+  will _still_ be present on your S3 backup, technically
+  forever. Moreover, if you need to do a full restore, the backup file
+  containing `large.zip` will need to be downloaded and unpacked
+  (i.e. you will need the disk space), _even though the file will not
+  be present when you finish the full restore_.
+
+* Since you need all incremental backups to restore, the more files
+  you have, the more data you need to download during a restore, and
+  the more files you will need to process to restore.
+
+To allow you to control your backup levels and avoid any potential
+issues, sitar allow you to reset backup level for subsequent backups.
+
+To do that, just save a file named _SITAR-RESET.txt_ in the backup
+path on S3. The file should contain a single line containing the
+number of the backup level you want to reset to.
+
+For example, to reset to level 3, you can use the fallowing AWS CLI
+command:
+
+```console
+echo 3 | aws s3 cp - s3://my-bucket/path/SITAR-RESET.txt
+```
+
+The number specified in the _SITAR-RESET.txt_ tells sitar which level
+should be considered the current backup level during the _next
+backup_. The program will delete all obsolete backups after resetting
+the level.
+
+Note that sitar reset the _current_ backup level. If you reset to _0_
+you will effectively delete all your incremental files -- incremental
+backups will then start over. Also note that the reset mechanism is
+not meant to reset a _full_ backup. To do that, you just rename/remove
+the backup path in S3 and re-run sitar.
 
 
 How it woks
