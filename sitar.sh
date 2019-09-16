@@ -134,13 +134,28 @@ fi
 # Create README.txt, if it does not exist.
 if ! s3exists 'README.txt'; then
     cat <<EOF | s3catinto 'README.txt' || exit 1
-These backup files were created by sitar.
+These backup files were created by sitar. See
+https://github.com/flaviovs/sitar for more details.
 
 To restore:
 
-1. Untar the "full" tar ball first
+1. Download "full.tar.bz2" and all "inc-*.tar.bz2" files.
 
-2. Untar each "inc-*" tar ball in numeric sequence
+2. Create a directory to hold restored files:
+
+   mkdir /tmp/restore
+
+3. Untar the full backup:
+
+   tar xf full.tar.bz2 --bzip2 --listed-incremental=/dev/null -C /tmp/restore
+
+4. Restore all incremental backups in numerical order:
+
+   LC_ALL=C ls inc-*.tar.bz2 | while read file; do \\
+     tar xf "$file" --bzip2 --listed-incremental=/dev/null -C /tmp/restore; done
+
+Note: these instructions assume your backups were all done using
+bzip2(1). Adjust command lines and file names if not.
 EOF
 fi
 
