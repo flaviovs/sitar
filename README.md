@@ -289,6 +289,10 @@ Known issues
   https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html for more
   details.
 
+* sitar does not do any locking of backup paths in S3. Make sure you
+  are not running two or more backups pointing to the same S3 paths,
+  otherwise bad things will happen to your data.
+
 
 Bugs? Suggestions?
 ==================
