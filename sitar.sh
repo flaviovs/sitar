@@ -112,16 +112,15 @@ else
         exit 1
     fi
 
+    LAST_LEVEL=$(cat "$TMPDIR/sitar/level.dat")
     if s3exists 'SITAR-RESET.txt'; then
         NEW_LEVEL=$($AWS s3 cp -- "$S3BASE/SITAR-RESET.txt" -)
         if [ "$NEW_LEVEL" != $(echo "$NEW_LEVEL" | tr -dc '0-9') ] || [ "$NEW_LEVEL" -lt 0 ]; then
             echo "$0: Invalid RESET value ignored: $NEW_LEVEL" 1>&2
-        else
+        elif [ "$NEW_LEVEL" -lt "$LAST_LEVEL" ]; then
             LAST_LEVEL="$NEW_LEVEL"
         fi
         $AWS s3 rm --only-show-errors -- "$S3BASE/SITAR-RESET.txt" || exit 1
-    else
-        LAST_LEVEL=$(cat "$TMPDIR/sitar/level.dat")
     fi
 
     LEVEL=$(($LAST_LEVEL + 1))
