@@ -80,7 +80,7 @@ _sitar [-C COMPRESS] DIRECTORY s3://BUCKET/PATH/... [EXTRA-TAR-OPTIONS]_
 
 * _DIRECTORY_ - the directory you want to backup.
 
-* _s3://BUCKET/PATH/..._ - n bucket and object path in S3 where backup
+* _s3://BUCKET/PATH/..._ - bucket and object path in S3 where backup
   files should be saved to.
 
 * _EXTRA-TAR-OPTIONS_ - extra options to be passed to
@@ -98,7 +98,7 @@ sitar / s3://my-bucket/backups --exclude-backups --exclude-vcs-ignores
 
 The command above will backup your entire directory hierarchy to the
 path _/backups_ in the S3 bucket _my-bucket_. The tar(1) command will
-receive the parameters _--exclude-backups --exclude-vcs-ignores_ (the
+receive the parameters _--exclude-backups --exclude-vcs-ignores_ (see
 tar(1) for more information about tar options).
 
 
@@ -118,7 +118,7 @@ sitar provides two mechanisms to ignore files:
         ./sys
 
 * _.sitarskip_ - `.sitarskip` files make tar(1) completely skip all
-  files and directory at or below directory containing them. For
+  files and directory at or below directories containing them. For
   example, to avoid backups of `/var/tmp`, you can do:
 
 	 ```console
