@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2018-2019 Flávio Veloso Soares
 #
-# This program is licences under the terms of the MIT license. See the
+# This program is licenced under the terms of the MIT license. See the
 # file LICENSE for full licensing terms.
 #
 
