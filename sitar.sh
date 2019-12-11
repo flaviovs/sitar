@@ -151,7 +151,7 @@ To restore:
 4. Restore all incremental backups in numerical order:
 
    LC_ALL=C ls inc-*.tar.bz2 | while read file; do \\
-     tar xf "$file" --bzip2 --listed-incremental=/dev/null -C /tmp/restore; done
+     tar xf "\$file" --bzip2 --listed-incremental=/dev/null -C /tmp/restore; done
 
 Note: these instructions assume your backups were all done using
 bzip2(1). Adjust command lines and file names if not.
