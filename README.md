@@ -282,7 +282,7 @@ Known issues
 ============
 
 * Streaming to S3 will fail if a single backup file is larger than
-  5GB. To workaround this, use the _AWSCLI_EXTRA_ environment variable
+  50GB. To workaround this, use the _AWSCLI_EXTRA_ environment variable
   (see above) to pass _--expected-size=SIZE_ to AWS CLI, where _SIZE_
   is a rough estimation of your backup size (it just need to be a
   little bigger than the data being uploaded). See
